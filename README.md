@@ -4,7 +4,7 @@
 | Day | Language | Status  |
 |-----|----------|---------|
 | 1   | Elixir   |  ⭐️ ⭐️   |
-| 2   | _TBD_    | Pending |
+| 2   | Elixir   | ⭐️ ⭐️  |
 | 3   | _TBD_    | Pending |
 | 4   | _TBD_    | Pending |
 | 5   | _TBD_    | Pending |
