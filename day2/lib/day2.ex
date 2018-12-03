@@ -10,7 +10,7 @@ defmodule Day2 do
 
         {two_sum + two_count, three_sum + three_count}
       )end) 
-    |> finalize()
+    |> get_two_three_product()
   end
 
   def part_two do
@@ -38,7 +38,7 @@ defmodule Day2 do
     )end)
   end
   
-  defp finalize({two_sum, three_sum}) do
+  defp get_two_three_product({two_sum, three_sum}) do
     two_sum * three_sum
   end
 
