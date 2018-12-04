@@ -5,7 +5,7 @@
 |-----|----------|---------|
 | 1   | Elixir   |  ⭐️ ⭐️   |
 | 2   | Elixir   | ⭐️ ⭐️  |
-| 3   | Ruby     | Pending |
+| 3   | Ruby     | ⭐️ ⭐️   |
 | 4   | _TBD_    | Pending |
 | 5   | _TBD_    | Pending |
 | 6   | _TBD_    | Pending |
