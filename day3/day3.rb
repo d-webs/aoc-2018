@@ -1,5 +1,3 @@
-require 'byebug'
-
 module Day3
   LINE_REGEX = /#(?<id>\d+)\D+(?<left>\d+),(?<top>\d+)\D+(?<w>\d+)x(?<h>\d+)/
 
@@ -37,22 +35,8 @@ module Day3
   ## Grid
   class Grid
     def self.build_empty_grid(filename)
-      max_width, max_height = 0, 0
-
-      File.foreach(filename) do |line|
-        claim = Claim.new(FileUtil.get_claim_data(line))
-
-        max_width = claim.right_edge if claim.right_edge > max_width
-        max_height = claim.bottom_edge if claim.bottom_edge > max_height
-      end
-
-      data_height = max_height + 10 # arbitrary padding
-      data_width = max_width + 10 # arbitrary padding
-
-      # Create an array of arrays, of arrays. The lowest level
-      # array is a bucket to hold coordinates (between 0 - 5 objects)
-      data_arr = Array.new(data_height) do
-        Array.new(data_width) { Array.new }
+      data_arr = Array.new(1000) do
+        Array.new(1000) { Array.new }
       end
 
       self.new(data_arr)
