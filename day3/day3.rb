@@ -2,6 +2,12 @@ require 'byebug'
 require 'benchmark'
 require_relative 'linked_list'
 
+## Complexity Analysis
+## Input size: K
+## Grid size: N * N
+## 
+## part one: K * 
+
 module Day3
   LINE_REGEX = /#(?<id>\d+)\D+(?<left>\d+),(?<top>\d+)\D+(?<w>\d+)x(?<h>\d+)/
 
@@ -34,8 +40,7 @@ module Day3
     end
 
     def add_all_claims
-      # File.foreach(@input_path) do |line|
-      `grep "^.*$" #{@input_path}`.split(/\n/).each do |line|
+      File.foreach(@input_path) do |line|
         claim_data = Day3::get_claim_data(line)
         claim = Claim.new(claim_data)
 
@@ -70,7 +75,7 @@ module Day3
     end
 
     def invalidate_nodes_in_bucket!(bucket)
-      bucket.each(&:invalidate_node)
+      bucket[-2..-1].each(&:invalidate_node)
     end
 
     def [](pos)
