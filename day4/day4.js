@@ -1,16 +1,6 @@
 const fs = require('fs');
-const TIMESTAMP_REGEX = /\[(?<yr>\d{4})-(?<mo>\d{2})-(?<day>\s{2})\s*(?<hr>\d{2}):(?<min>\d{2})\]/u
+const TIMESTAMP_REGEX = /\[\d+-(?<date>.+)\]/u
 const GUARD_ID_REGEX = /\].+(?<guardId>#\d+).+$/
-
-class BSTNode {
-  constructor(event) {
-    this.left, this.right = null, null;
-  }
-
-  insert(event) {
-
-  }
-}
 
 class Day4 {
   constructor(inputPath) {
@@ -19,37 +9,44 @@ class Day4 {
   }
 
   run() {
-    fs.readFile(this.inputPath, (_err, line) => {
-      console.log(line.toString());
-      const lineData = TIMESTAMP_REGEX.exec(line.toString());
+    const data = fs.readFileSync(this.inputPath);
+    const events = data.toString().split(/\n/);
+
+    const sortedEvents = events.sort((line1, line2) => {
+      const { groups: { date: ts1 } } = TIMESTAMP_REGEX.exec(line1);
+      const { groups: { date: ts2 } } = TIMESTAMP_REGEX.exec(line2);
+
+      const date1 = new Date(ts1);
+      const date2 = new Date(ts2);
+
+      if (date1 < date2) {
+        return -1
+      }
+      if (date1 > date2) {
+        return 1
+      }
+      return 0;
+    })
+    
+    //   console.log(line.toString());
   
-      if (lineData) { 
-        // const guardId = line.toString().match(GUARD_ID_REGEX);
-        const { groups } = lineData
-        const event = new Event(groups);
+    //   if (lineData) { 
+    //     // const guardId = line.toString().match(GUARD_ID_REGEX);
+    //     const { groups: date } = lineData
+    //     // const event = new Event(date);
         
-        if (this.rootNode === null) {
-          this.rootNode = new BSTNode(event)
-          console.log(this.rootNode);
-        }
-      };
+    //     if (!this.rootNode) {
+    //       this.rootNode = new BSTNode(date);
+    //     } else {
+    //       this.rootNode.insert(new BSTNode(date));
+    //     }
+    //   };
 
-    });
+    // });
+    null
   }
-}
-
-class Event {
-  constructor({ yr, mo, day, hr, min }) {
-    this.yr = yr;
-    this.mo = mo;
-    this.day = day;
-    this.hr = hr;
-    this.min = min;
-  }
-}
-
-class Guard {
-
 }
 
 new Day4('./input.txt').run();
+// data = fs.readFileSync('./input.txt');
+// console.log(data.toString().split(/\n/));

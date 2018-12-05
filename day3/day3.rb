@@ -1,3 +1,5 @@
+## Complexity Analysis
+## K * (N * N) + (N * N)
 module Day3
   LINE_REGEX = /#(?<id>\d+)\D+(?<left>\d+),(?<top>\d+)\D+(?<w>\d+)x(?<h>\d+)/
 
@@ -8,13 +10,12 @@ module Day3
     def initialize
       @input_path = './input.txt'
       @grid = Grid.build_empty_grid(@input_path)
-      @non_overlapping = nil
       @claims = []
     end
 
     def part_one
       add_all_claims
-      grid.count_overlaps
+      grid.num_overlaps
     end
 
     def part_two
@@ -36,16 +37,18 @@ module Day3
   class Grid
     def self.build_empty_grid(filename)
       data_arr = Array.new(1000) do
-        Array.new(1000) { Array.new }
+        Array.new(1000) { Bucket.new }
       end
 
       self.new(data_arr)
     end
 
     attr_reader :data
+    attr_accessor :num_overlaps
 
     def initialize(data)
       @data = data
+      @num_overlaps = 0
     end
 
     def count_overlaps
@@ -98,7 +101,14 @@ module Day3
           bucket = grid[pos]
           bucket << Coordinate.new(x_coord, y_coord, self)
 
-          set_claims_to_overlap!(bucket) if bucket.size > 1
+          if bucket.size > 1
+            set_claims_to_overlap!(bucket) 
+            
+            unless bucket.overlapped
+              bucket.set_as_overlapped
+              grid.num_overlaps += 1
+            end
+          end
         end
       end
     end
@@ -118,6 +128,30 @@ module Day3
 
     def set_claim_to_overlap
       claim.overlaps = true
+    end
+  end
+
+  class Bucket 
+    attr_reader :data, :overlapped
+    def initialize
+      @data = []
+      @overlapped = false
+    end
+
+    def set_as_overlapped
+      @overlapped ||= true
+    end
+
+    def <<(obj)
+      data << obj
+    end
+
+    def each
+      data.each { |d| yield d }
+    end
+
+    def size
+      data.size
     end
   end
 
