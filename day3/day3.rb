@@ -1,17 +1,24 @@
 require 'byebug'
+require 'benchmark'
+require_relative 'linked_list'
 
 module Day3
   LINE_REGEX = /#(?<id>\d+)\D+(?<left>\d+),(?<top>\d+)\D+(?<w>\d+)x(?<h>\d+)/
 
+  def self.get_claim_data(claim_text)
+    # Example claim_text: 
+    # "#1 @ 100,366: 24x27"
+    claim_text.match(LINE_REGEX)
+  end
+
   ## Main
-  class Day3
-    attr_reader :grid, :claims
+  class Solver
+    attr_reader :grid, :valid_claims
 
     def initialize
       @input_path = './input.txt'
       @grid = Grid.build_empty_grid(@input_path)
-      @non_overlapping = nil
-      @claims = []
+      @valid_claims = LinkedList.new
     end
 
     def part_one
@@ -21,15 +28,23 @@ module Day3
 
     def part_two
       add_all_claims
-      claims.find(&:no_overlap?).id
+
+      # There should only be one linkedlist node left
+      valid_claims.first.val.id
     end
 
     def add_all_claims
-      File.foreach(@input_path) do |line|
-        claim_data = FileUtil.get_claim_data(line)
+      # File.foreach(@input_path) do |line|
+      `grep "^.*$" #{@input_path}`.split(/\n/).each do |line|
+        claim_data = Day3::get_claim_data(line)
         claim = Claim.new(claim_data)
+
+        # insert operation returns the LL Node
+        claim_node = valid_claims.insert(claim)
+        # let the claim know about its LL Node counterpart
+        # this is for O(1) invalidation when it overlaps
+        claim.node = claim_node
         claim.add_to_grid(grid)
-        claims << claim
       end
     end
   end
@@ -37,25 +52,9 @@ module Day3
   ## Grid
   class Grid
     def self.build_empty_grid(filename)
-      max_width, max_height = 0, 0
+      data = Hash.new { |h, k| h[k] = [] }
 
-      File.foreach(filename) do |line|
-        claim = Claim.new(FileUtil.get_claim_data(line))
-
-        max_width = claim.right_edge if claim.right_edge > max_width
-        max_height = claim.bottom_edge if claim.bottom_edge > max_height
-      end
-
-      data_height = max_height + 10 # arbitrary padding
-      data_width = max_width + 10 # arbitrary padding
-
-      # Create an array of arrays, of arrays. The lowest level
-      # array is a bucket to hold coordinates (between 0 - 5 objects)
-      data_arr = Array.new(data_height) do
-        Array.new(data_width) { Array.new }
-      end
-
-      self.new(data_arr)
+      self.new(data)
     end
 
     attr_reader :data
@@ -65,38 +64,35 @@ module Day3
     end
 
     def count_overlaps
-      data.reduce(0) do |count, row|
-        count + row.count { |el| el >= 2 }
+      data.reduce(0) do |count, (k, v)|
+        v.size > 1 ? count + 1 : count
       end
     end
 
+    def invalidate_nodes_in_bucket!(bucket)
+      bucket.each(&:invalidate_node)
+    end
+
     def [](pos)
-      x, y = pos
-      data[x][y]
+      data[pos]
     end
 
     def []=(pos, val)
-      x, y = pos
-      data[x][y] = val
+      data[pos] = val
     end
   end
 
   ## Claim 
   class Claim
     attr_reader :width, :height, :left, :top, :id
-    attr_accessor :overlaps
+    attr_accessor :node
 
     def initialize(claim_data)
       @width = claim_data[:w].to_i
       @height = claim_data[:h].to_i
-      @left = claim_data[:left].to_i
-      @top = claim_data[:top].to_i
+      @left = claim_data[:left].to_i + 1
+      @top = claim_data[:top].to_i + 1
       @id = claim_data[:id].to_i
-      @overlaps = false
-    end
-
-    def no_overlap?
-      !overlaps
     end
 
     def right_edge
@@ -108,41 +104,35 @@ module Day3
     end
 
     def add_to_grid(grid)
-      (left + 1..right_edge).each do |x_coord|
-        (top + 1..bottom_edge).each do |y_coord|
+      (left..right_edge).each do |x_coord|
+        (top..bottom_edge).each do |y_coord|
           pos = x_coord, y_coord
           bucket = grid[pos]
-          bucket << Coordinate.new(x_coord, y_coord, self)
+          bucket << FabricSquare.new(x_coord, y_coord, self)
 
-          set_claims_to_overlap!(bucket) if bucket.size > 1
+          grid.invalidate_nodes_in_bucket!(bucket) if bucket.size > 1
         end
       end
     end
 
-    def set_claims_to_overlap!(bucket)
-      bucket.each(&:set_claim_to_overlap)
+    def remove_from_valid_list
+      unless @removed
+        node.remove
+        @removed = true
+      end
     end
   end
 
   ## Coord
-  class Coordinate
+  class FabricSquare
     attr_reader :x, :y, :claim
 
     def initialize(x, y, claim)
       @x, @y, @claim = x, y, claim
     end
 
-    def set_claim_to_overlap
-      claim.overlaps = true
-    end
-  end
-
-  ## Util
-  class FileUtil
-    def self.get_claim_data(claim_text)
-      # Example claim_text: 
-      # "#1 @ 100,366: 24x27"
-      claim_text.match(LINE_REGEX)
+    def invalidate_node
+      claim.remove_from_valid_list
     end
   end
 end
