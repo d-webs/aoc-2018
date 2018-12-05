@@ -4,7 +4,7 @@ module Day3
   LINE_REGEX = /#(?<id>\d+)\D+(?<left>\d+),(?<top>\d+)\D+(?<w>\d+)x(?<h>\d+)/
 
   ## Main
-  class Day3
+  class Solver
     attr_reader :grid, :claims
 
     def initialize
@@ -66,7 +66,7 @@ module Day3
 
     def count_overlaps
       data.reduce(0) do |count, row|
-        count + row.count { |el| el >= 2 }
+        count + row.count { |el| el.length >= 2 }
       end
     end
 
