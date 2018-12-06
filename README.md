@@ -6,7 +6,7 @@
 | 1   | Elixir   |  ⭐️ ⭐️   |
 | 2   | Elixir   | ⭐️ ⭐️  |
 | 3   | Ruby     | ⭐️ ⭐️   |
-| 4   | JS       | Pending |
+| 4   | JS (FP)   | ⭐️    |
 | 5   | _TBD_    | Pending |
 | 6   | _TBD_    | Pending |
 | 7   | _TBD_    | Pending |
