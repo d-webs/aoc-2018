@@ -58,13 +58,16 @@ const sortByTime = arr => arr.sort((line1, line2) => {
   return 0
 })
 
+const maxByVal = map => map.reduce(([maxK, maxV], v, k) => (
+  v > maxV ? [k, v] : [maxK, maxV]
+), [0, 0])
+
 
 /*
  * 
  * Main
  * 
 */
-
 const findTimes = ([
   currentEvent,
   nextEvent,
@@ -117,24 +120,43 @@ const findTimes = ([
   )
 }
 
-const maxByVal = map => map.reduce(([ maxK, maxV ], v, k) => (
-  v > maxV ? [k, v] : [maxK, maxV]
-), [0, 0])[0]
-
 const findSleepiest = ({ guardTotalTimes, guardMinuteCounts }) => {
-  const sleepiestGuard = maxByVal(guardTotalTimes)
+  const [ sleepiestGuard ] = maxByVal(guardTotalTimes)
   const timeCounts = guardMinuteCounts.get(sleepiestGuard)
-  const sleepiestMin = maxByVal(timeCounts)
+  const [ sleepiestMin ] = maxByVal(timeCounts)
 
   return parseInt(sleepiestGuard) * parseInt(sleepiestMin);
 }
 
-R.pipe(
+const findMostCommonMinute = ({ guardTotalTimes, guardMinuteCounts }) => {
+  const accumulater = [null, 0, 0]
+  const [ guardId, minute ] = guardMinuteCounts.reduce(([maxId, maxMinute, maxFreq], mins, id) => {
+    const [ min, freq ] = maxByVal(mins)
+    
+    if (freq > maxFreq) {
+      return [id, min, freq]
+    }
+    return [maxId, maxMinute, maxFreq]
+  }, accumulater)
+
+  return parseInt(guardId) * parseInt(minute)
+}
+
+partOne = R.pipe(
   getLines,
   sortByTime,
   findTimes,
   findSleepiest,
   console.log
-)('./input.txt')
+)
 
+partTwo = R.pipe(
+  getLines,
+  sortByTime,
+  findTimes,
+  findMostCommonMinute,
+  console.log
+)
 
+partOne('input.txt');
+partTwo('input.txt');
