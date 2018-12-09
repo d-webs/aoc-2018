@@ -1,4 +1,6 @@
 const fs = require('fs')
+const { Map, List } = require('immutable')
+const R = require('rambda')
 
 /*
 ** Regular Expressions
@@ -7,29 +9,14 @@ const TIMESTAMP_REGEX = /\[\d+-(?<date>.+)\]/
 const GUARD_REGEX = /\].+#(?<id>\d+).+$/
 
 
-/*
-**
-** Functional Programming Util
-**
-*/
-const pipe = (...fns) => x => fns.reduce((v, f) => f(v), x)
-const last = obj => obj[obj.length - 1]
-const sortByVal = h => (
-  Object.keys(h).sort((k1, k2) => (
-    h[k1] > h[k2] ? 1 : 
-      h[k1] < h[k2] ? 
-        -1 : 
-        0
-  ))
-)
-
-const buildRange = (
-  start, 
-  end, 
-  arr = []
-) => {
-  return start >= end ? arr : [start, ...buildRange(start + 1, end, arr.slice(1))];
-}
+// const sortByVal = h => (
+//   Object.keys(h).sort((k1, k2) => (
+//     h[k1] > h[k2] ? 1 : 
+//       h[k1] < h[k2] ? 
+//         -1 : 
+//         0
+//   ))
+// )
 
 /*
 ** File I/O
@@ -43,24 +30,21 @@ const getLines = path => (
 /*
 ** Matching Functions
 */
-const constructMatcher = regex => line => regex.exec(line) || {}
+const constructMatcher = regex => line => R.match(regex, line) //regex.exec(line) || {}
 const getMatchGroup = property => ({ groups = {} }) => groups[property]
 
 /*
-** Parsing
+** String Parsing
 */
-const getMinutes = pipe(
-  obj => String.prototype.split.call(obj, ":"),
-  last,
+const getMinutes = R.pipe(
+  str => R.split(":", str),
+  R.last,
   parseInt,
-  n => n % 60,
+  n => n % 60
 )
 
-const getGuardMatch = constructMatcher(GUARD_REGEX)
-const getTimeMatch = constructMatcher(TIMESTAMP_REGEX)
-
-const getTime = pipe(getTimeMatch, getMatchGroup('date'))
-const getGuard = pipe(getGuardMatch, getMatchGroup('id'))
+const getTime = R.pipe(constructMatcher(TIMESTAMP_REGEX), getMatchGroup('date'))
+const getGuard = R.pipe(constructMatcher(GUARD_REGEX), getMatchGroup('id'))
 
 /*
  * Sorting
@@ -80,72 +64,77 @@ const sortByTime = arr => arr.sort((line1, line2) => {
  * Main
  * 
 */
-const partOne = events => {
-  let current
-  const guards = {}
-  for (let i = 0; i < events.length - 1; i++) {
-    const event = events[i]
-    
-    let id = getGuard(event)
-    if (id) {
-      if (typeof guards[id] === 'undefined') {
-        guards[id] = new Guard(id)
-      }
-      
-      current = id
-      continue
-    }
 
-    if (event.includes('asleep')) {
-      const guard = guards[current];
-      const start = getMinutes(event)
-      const end = getMinutes(events[i + 1])
-      const total = end - start
-      guard.addTime(total)
-
-      const mins = buildRange(start, end)
-      for (let i = 0; i < mins.length; i++) {
-        const minute = mins[i]
-        let minuteCount = guard.minutes[minute]
-        guard.minutes[minute] =
-          minuteCount ? 
-          minuteCount + 1 :
-          1
-      }
+const findTimes = ([
+  currentEvent,
+  nextEvent,
+  ...rest
+  ],
+  currentShift,
+  guardTotalTimes = Map(),
+  guardMinuteCounts = Map(),
+) => {
+  if (R.isNil(nextEvent)) { 
+    return {
+      guardTotalTimes,
+      guardMinuteCounts
     }
   }
+  const id = getGuard(currentEvent)
 
-  const [winner] = Object.keys(guards).sort((k1, k2) => (
-    guards[k1].total < guards[k2].total ? 1 : (
-      guards[k1].total > guards[k2].total ?
-       -1 : 0
-    )
-  ))
+  let _currentShift = currentShift
+  let _guardTotalTimes = guardTotalTimes
+  let _guardMinuteCounts = guardMinuteCounts
 
-  return parseInt(winner) * parseInt(guards[winner].mostCommonMinute())
+  if (id) { _currentShift = id; }
+
+  if (R.includes('asleep', currentEvent)) {
+    const start = getMinutes(currentEvent)
+    const end = getMinutes(nextEvent)
+    const timeAsleep = end - start
+    const newTotal = timeAsleep + (_guardTotalTimes.get(_currentShift) || 0)
+
+    _guardTotalTimes = _guardTotalTimes.set(_currentShift, newTotal)
+
+    const minuteArray = R.range(start, end)
+    let minuteCounts = _guardMinuteCounts.get(_currentShift) || Map()
+    minuteCounts = minuteArray.reduce((counter, min) => {
+      const count = counter.get(min) || 0
+      return counter.set(min, count + 1)
+    }, minuteCounts)
+
+    _guardMinuteCounts = _guardMinuteCounts.set(_currentShift, minuteCounts);
+  }
+
+  return findTimes(
+    [
+      nextEvent,
+      ...rest
+    ],
+    _currentShift,
+    _guardTotalTimes,
+    _guardMinuteCounts
+  )
 }
 
-class Guard {
-  constructor(id) {
-    this.total = 0
-    this.minutes = {}
-    this.id = id
-  }
-  
-  addTime(time) {
-    this.total += time
-  }
+const maxByVal = map => map.reduce(([ maxK, maxV ], v, k) => (
+  v > maxV ? [k, v] : [maxK, maxV]
+), [0, 0])[0]
 
-  mostCommonMinute() {
-    return pipe(sortByVal, last)(this.minutes);
-  }
+const findSleepiest = ({ guardTotalTimes, guardMinuteCounts }) => {
+  const sleepiestGuard = maxByVal(guardTotalTimes)
+  const timeCounts = guardMinuteCounts.get(sleepiestGuard)
+  const sleepiestMin = maxByVal(timeCounts)
+
+  return parseInt(sleepiestGuard) * parseInt(sleepiestMin);
 }
 
-console.log(
-  pipe(
-    getLines,
-    sortByTime,
-    partOne
-  )('./input.txt')
-)
+R.pipe(
+  getLines,
+  sortByTime,
+  findTimes,
+  findSleepiest,
+  console.log
+)('./input.txt')
+
 

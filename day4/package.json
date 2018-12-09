@@ -1,0 +1,16 @@
+{
+  "name": "day4",
+  "version": "1.0.0",
+  "description": "",
+  "main": "day4.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "immutable": "^4.0.0-rc.12",
+    "rambda": "^2.1.1"
+  }
+}
